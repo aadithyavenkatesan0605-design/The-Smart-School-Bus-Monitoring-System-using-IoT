@@ -1,0 +1,202 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(13, 12, 11, 10, 9, 8);
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+SoftwareSerial mySerial(2, 3); // RX, TX
+TinyGPSPlus gps;
+// Motor pins for first drive (3, 4, 5, 6)
+int motor1A = A0;
+int motor1B = A1;
+int motor1C = A2;
+int motor1D = A3;
+int F;
+// Ultrasonic sensor pins (trigger at 7, echo at 6)
+int trigPin = 7;
+int echoPin = 6;
+#define AlertPin A5
+long duration;
+int distance;
+int A,B;
+void setup()
+{
+// Set motor pins as output
+pinMode(motor1A, OUTPUT);
+pinMode(motor1B, OUTPUT);
+pinMode(motor1C, OUTPUT); 24
+pinMode(motor1D, OUTPUT);
+Serial.begin(9600);
+mySerial.begin(9600);
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+pinMode(A5, OUTPUT);
+pinMode(4, OUTPUT);
+pinMode(3, INPUT);
+pinMode(5, INPUT);
+// Initialize LCD
+lcd.begin(16, 2);
+lcd.setCursor(0, 0);
+lcd.print("School Bus ");
+lcd.setCursor(0, 1);
+lcd.print("Monitoring System");
+delay(2000);
+lcd.clear();
+}
+void loop()
+{
+GetGPS();
+if((A==1) || (B==1))
+{
+digitalWrite(4,HIGH);
+}
+else
+{
+digitalWrite(4,LOW);
+}
+F=digitalRead(3);
+if(F==HIGH) ////panic 25
+{
+lcd.setCursor(14,0);
+lcd.print("PD");
+B=1;
+Serial.print('P');
+delay(1);
+}
+else
+{
+lcd.setCursor(14,0);
+B=0;
+lcd.print("PN");
+Serial.print('p');
+delay(1);
+}
+if(Serial.available() )
+{
+char Y = Serial.read();
+Serial.print(Y);
+if (Y=='A')
+{
+Serial.print('A');
+lcd.setCursor(8,0);
+lcd.print("Door:O");
+delay(500);
+lcd.setCursor(8,0);
+lcd.print("Close ");
+}
+26
+if (Y=='B')
+{
+Serial.print('B');
+lcd.setCursor(8,0);
+lcd.print("Door:O");
+delay(500);
+lcd.setCursor(8,0);
+lcd.print("Close ");
+}
+if (Y=='C')
+{
+Serial.print('C');
+lcd.setCursor(8,0);
+lcd.print("Door:O");
+delay(500);
+lcd.setCursor(8,0);
+lcd.print("Close ");
+}
+if (Y=='D')
+{
+Serial.print('D');
+lcd.setCursor(8,0);
+lcd.print("Door:O");
+delay(500);
+lcd.setCursor(8,0);
+lcd.print("Close ");
+}
+if (Y=='X')
+{
+Serial.print('X'); 27
+lcd.setCursor(8,0);
+lcd.print("Close ");
+// delay(100);
+// lcd.setCursor(8,0);
+// lcd.print("Door:C");
+}
+}
+// Read distance from ultrasonic sensor
+digitalWrite(trigPin, LOW);
+delayMicroseconds(2);
+digitalWrite(trigPin, HIGH);
+delayMicroseconds(10);
+digitalWrite(trigPin, LOW);
+duration = pulseIn(echoPin, HIGH);
+distance = duration * 0.034 / 2;
+// Display the distance on LCD
+lcd.setCursor(0, 0);
+lcd.print("D:");
+lcd.print(distance);
+lcd.print(" ");
+if (distance < 15)
+{
+// Display warning if too close
+lcd.setCursor(5, 0);
+lcd.print("OD");
+stopMotors();
+A=1;
+}
+else
+{
+lcd.setCursor(5, 0);
+lcd.print("ON");
+forward(); 28
+A=0;
+}
+}
+void GetGPS() {
+while (mySerial.available() > 0) {
+gps.encode(mySerial.read());
+if (gps.location.isUpdated()) {
+float lat = gps.location.lat();
+float lng = gps.location.lng();
+// Send GPS data to LCD
+// lcd.clear(); // Clear the screen before updating
+lcd.setCursor(0, 1);
+lcd.print("L:");
+lcd.print(lat, 4);
+lcd.setCursor(8, 1);
+lcd.print("G:");
+lcd.print(lng, 4);
+Serial.print('L');
+Serial.print(lat, 6);
+Serial.print('G');
+Serial.println(lng, 6);
+}
+}
+}
+void forward() {
+digitalWrite(motor1A, HIGH);
+digitalWrite(motor1B, LOW);
+digitalWrite(motor1C, HIGH);
+digitalWrite(motor1D, LOW);
+}
+void backward() { 29
+digitalWrite(motor1A, LOW);
+digitalWrite(motor1B, HIGH);
+digitalWrite(motor1C, LOW);
+digitalWrite(motor1D, HIGH);
+}
+void stopMotors() {
+digitalWrite(motor1A, LOW);
+digitalWrite(motor1B, LOW);
+digitalWrite(motor1C, LOW);
+digitalWrite(motor1D, LOW);
+}
+void turnLeft() {
+digitalWrite(motor1A, LOW);
+digitalWrite(motor1B, HIGH);
+digitalWrite(motor1C, HIGH);
+digitalWrite(motor1D, LOW);
+}
+void turnRight() {
+digitalWrite(motor1A, HIGH);
+digitalWrite(motor1B, LOW);
+digitalWrite(motor1C, LOW);
+digitalWrite(motor1D, HIGH);
+}
